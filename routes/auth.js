@@ -74,8 +74,9 @@ router.post('/generate-link', async (req, res) => {
     const interviewLink = `${appUrl}/interview?token=${token}`;
     console.log('[Auth] Generated link for', candidateEmail, '->', interviewLink);
 
-    // Send email to candidate (optional)
+    // Send email to candidate (optional, non-blocking)
     let emailSent = false;
+    let emailAttempted = false;
     if (transporter) {
       const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -112,13 +113,15 @@ router.post('/generate-link', async (req, res) => {
         `
       };
 
-      try {
-        await transporter.sendMail(mailOptions);
-        emailSent = true;
-      } catch (emailErr) {
-        console.error('Email send failed, proceeding with link generation:', emailErr);
-        // Continue; admin can copy the link from the response/UI
-      }
+      emailAttempted = true;
+      transporter
+        .sendMail(mailOptions)
+        .then(() => {
+          console.log('[Auth] Email sent successfully to', candidateEmail);
+        })
+        .catch((emailErr) => {
+          console.error('Email send failed (non-blocking):', emailErr);
+        });
     } else {
       console.warn('[Auth] Email credentials not configured; skipping sendMail. Link will be shown in UI.');
     }
@@ -128,7 +131,8 @@ router.post('/generate-link', async (req, res) => {
       sessionId,
       interviewLink,
       expiresAt,
-      emailSent
+      emailSent,
+      emailAttempted
     });
 
   } catch (error) {
