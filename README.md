@@ -270,6 +270,126 @@ interview-app/
 - Add load balancing for multiple instances
 - Use cloud storage for recordings
 
+---
+
+## Render Deployment Guide (Free Tier)
+
+This project is designed to be deployed as a single Node/Express service on Render. The free tier is suitable for prototypes and small usage. Cold starts (20–50s) can occur after inactivity.
+
+### 1) Prerequisites
+- GitHub repository containing this app
+- Gmail App Password (2FA enabled) for SMTP
+
+### 2) Environment Variables (Render → Settings → Environment)
+Set the following variables (values shown are examples):
+
+```
+NODE_ENV=production
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your.email@gmail.com
+EMAIL_PASS=your-app-password
+RECRUITER_EMAIL=recipient@example.com
+JWT_SECRET=replace-with-a-long-random-string
+RECORDINGS_PATH=/opt/render/project/src/recordings
+RESULTS_PATH=/opt/render/project/src/results
+APP_URL=TEMP_PLACEHOLDER
+```
+
+Notes:
+- `APP_URL` will be updated to your Render URL after the first successful deploy.
+- `RECORDINGS_PATH` and `RESULTS_PATH` match the mount points you will create for persistent disks.
+
+### 3) Create the Web Service
+1. Go to https://render.com → New → Web Service
+2. Select your repo
+3. Configure:
+   - Name: `interview-app` (or any unique name)
+   - Runtime: Node
+   - Build Command: `npm install`
+   - Start Command: `node server.js`
+   - Instance Type: Free
+4. Add the Environment Variables from step 2
+5. Create Web Service and wait for deploy to finish
+
+### 4) Add Persistent Disks (Recommended)
+Persistent disks keep uploaded recordings and generated result files across restarts.
+
+- Create Disk A:
+  - Mount Path: `/opt/render/project/src/recordings`
+  - Size: 1–2 GB (depending on expected video volume)
+
+- Create Disk B:
+  - Mount Path: `/opt/render/project/src/results`
+  - Size: 100–500 MB
+
+The application reads these paths from the env vars `RECORDINGS_PATH` and `RESULTS_PATH` set above. No code change is needed.
+
+#### Deploying WITHOUT Persistent Disks (Free-only setup)
+- You can skip adding disks. In that case, files are stored on the ephemeral filesystem.
+- What this means:
+  - Files persist while the instance is running.
+  - Files are lost on redeploys, restarts, or when Render free dyno sleeps.
+- Recommended adjustments if you skip disks:
+  - Keep email notifications enabled (you still receive the results summary via email).
+  - Consider lowering recording size or disabling recordings for production use on free tier.
+  - If you need durable storage later, switch to a cloud bucket (e.g., S3 free tier) or enable Render persistent disks and set `RECORDINGS_PATH`/`RESULTS_PATH` accordingly.
+
+### 5) Set APP_URL and Redeploy
+After the first deploy, Render will assign a URL like `https://your-service.onrender.com`.
+
+- Update `APP_URL` to this value in Render → Environment
+- Save → Trigger a Redeploy
+
+This value is used when generating secure interview links that are emailed to candidates.
+
+### 6) Post-Deploy Smoke Tests
+Perform these checks from an Incognito browser:
+
+- **Home/Admin**: Open `https://your-service.onrender.com/`
+- **Generate link**: Use the admin panel to send yourself an invite
+- **Interview start**:
+  - First question appears immediately
+  - Global timer shows 60:00
+  - Console logs include `startInterview` and `loadQuestion 0`
+- **Anti-cheat**:
+  - Switch tabs; after 5 seconds the interview should auto-submit
+- **Submit flow**:
+  - On last question, click Submit
+  - Buttons disable; submission succeeds
+  - Redirect to `/thank-you.html`
+  - Email arrives at `RECRUITER_EMAIL`
+- **Files**:
+  - Confirm files saved under mounted paths (`/recordings` and `/results`)
+
+### 7) Free Tier Limitations
+- Cold starts (20–50s) after inactivity
+- Modest CPU/network limits
+- Consider upgrading or splitting front/backends if traffic grows
+
+### 8) Troubleshooting on Render
+- **Emails not sending**: Confirm `EMAIL_USER`, `EMAIL_PASS` (App Password), and that Render logs show SMTP success. Gmail may throttle heavy usage.
+- **Recording issues**: Verify browser supports MediaRecorder (Chrome is recommended). Ensure HTTPS.
+- **Links invalid**: Ensure `APP_URL` matches your Render URL and that tokens haven’t expired.
+- **Files missing after restart**: Verify Persistent Disks are mounted to the same paths as in env vars.
+  - If you deployed without disks, this is expected on redeploy or cold start. Use a bucket (S3) or enable disks for durability.
+
+---
+
+## Gmail App Password: Detailed Steps
+
+To use Gmail SMTP you must use an App Password (not your normal password).
+
+1. Enable 2-Step Verification on your Google Account.
+2. Go to Google Account → Security → App passwords.
+3. Select App: “Mail”, Device: “Other (Custom name)” (e.g., “Interview App”).
+4. Generate. Copy the 16-character password.
+5. Set it in your environment as `EMAIL_PASS` both locally and on Render.
+6. Keep `EMAIL_HOST=smtp.gmail.com` and `EMAIL_PORT=587`.
+7. If sending volume increases or Gmail throttles, consider a transactional email provider (Mailgun/SendGrid free tiers).
+
+---
+
 ## Support
 
 For technical issues or questions:

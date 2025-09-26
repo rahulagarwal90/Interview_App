@@ -107,7 +107,12 @@ router.post('/generate-link', async (req, res) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
+    try {
+      await transporter.sendMail(mailOptions);
+    } catch (emailErr) {
+      console.error('Email send failed, proceeding with link generation:', emailErr);
+      // Continue; admin can copy the link from the response/UI
+    }
 
     res.json({
       success: true,
