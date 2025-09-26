@@ -7,16 +7,19 @@ const path = require('path');
 
 const router = express.Router();
 
-// Email transporter setup
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// Email transporter setup (optional)
+let transporter = null;
+if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: Number(process.env.EMAIL_PORT),
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+}
 
 // Store active interview sessions (in production, use a database)
 const activeSessions = new Map();
@@ -28,6 +31,14 @@ router.post('/generate-link', async (req, res) => {
 
     if (!candidateEmail || !candidateName || !role) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate required environment variables
+    if (!process.env.APP_URL) {
+      return res.status(500).json({ error: 'APP_URL is not configured on the server. Please set it in Render Environment and redeploy.' });
+    }
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ error: 'JWT_SECRET is not configured on the server. Please set it in Render Environment and redeploy.' });
     }
 
     // Generate unique session ID
@@ -60,13 +71,15 @@ router.post('/generate-link', async (req, res) => {
 
     // Generate interview link
     const interviewLink = `${process.env.APP_URL}/interview?token=${token}`;
+    console.log('[Auth] Generated link for', candidateEmail, '->', interviewLink);
 
-    // Send email to candidate
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: candidateEmail,
-      subject: `Interview Invitation - ${role} Position`,
-      html: `
+    // Send email to candidate (optional)
+    if (transporter) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: candidateEmail,
+        subject: `Interview Invitation - ${role} Position`,
+        html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Interview Invitation</h2>
           <p>Dear ${candidateName},</p>
@@ -78,16 +91,6 @@ router.post('/generate-link', async (req, res) => {
               <li><strong>Position:</strong> ${role}</li>
               <li><strong>Duration:</strong> ${duration} minutes</li>
               <li><strong>Expires:</strong> ${expiresAt.toLocaleString()}</li>
-            </ul>
-          </div>
-
-          <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h4 style="color: #856404;">Important Instructions:</h4>
-            <ul>
-              <li>Ensure your camera and microphone are working properly</li>
-              <li>Find a quiet, well-lit environment</li>
-              <li>Do not switch tabs or applications during the interview</li>
-              <li>The interview will be recorded for evaluation purposes</li>
             </ul>
           </div>
 
@@ -104,14 +107,17 @@ router.post('/generate-link', async (req, res) => {
             If you have any technical issues, please contact the recruitment team.
           </p>
         </div>
-      `
-    };
+        `
+      };
 
-    try {
-      await transporter.sendMail(mailOptions);
-    } catch (emailErr) {
-      console.error('Email send failed, proceeding with link generation:', emailErr);
-      // Continue; admin can copy the link from the response/UI
+      try {
+        await transporter.sendMail(mailOptions);
+      } catch (emailErr) {
+        console.error('Email send failed, proceeding with link generation:', emailErr);
+        // Continue; admin can copy the link from the response/UI
+      }
+    } else {
+      console.warn('[Auth] Email credentials not configured; skipping sendMail. Link will be shown in UI.');
     }
 
     res.json({
