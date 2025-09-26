@@ -1,13 +1,14 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs-extra');
 const path = require('path');
 
 const router = express.Router();
 
-// Email transporter setup (optional)
+// Email providers setup (optional)
 let transporter = null;
 if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
   transporter = nodemailer.createTransport({
@@ -19,6 +20,16 @@ if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER &
       pass: process.env.EMAIL_PASS
     }
   });
+}
+
+let sendgridReady = false;
+if (process.env.SENDGRID_API_KEY) {
+  try {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    sendgridReady = true;
+  } catch (e) {
+    console.error('[Auth] Failed to initialize SendGrid:', e);
+  }
 }
 
 // Store active interview sessions (in production, use a database)
@@ -77,7 +88,53 @@ router.post('/generate-link', async (req, res) => {
     // Send email to candidate (optional, non-blocking)
     let emailSent = false;
     let emailAttempted = false;
-    if (transporter) {
+    if (sendgridReady) {
+      const fromEmail = process.env.SENDGRID_FROM || process.env.EMAIL_USER;
+      if (!fromEmail) {
+        console.warn('[Auth] SENDGRID_FROM or EMAIL_USER not set. Cannot send email.');
+      } else {
+        const msg = {
+          to: candidateEmail,
+          from: fromEmail,
+          subject: `Interview Invitation - ${role} Position`,
+          html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Interview Invitation</h2>
+          <p>Dear ${candidateName},</p>
+          <p>You have been invited to participate in a video interview for the <strong>${role}</strong> position.</p>
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <h3 style="color: #007bff;">Interview Details:</h3>
+            <ul>
+              <li><strong>Position:</strong> ${role}</li>
+              <li><strong>Duration:</strong> ${duration} minutes</li>
+              <li><strong>Expires:</strong> ${expiresAt.toLocaleString()}</li>
+            </ul>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${interviewLink}" 
+               style="background-color: #007bff; color: white; padding: 15px 30px; 
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+              Start Interview
+            </a>
+          </div>
+          <p style="color: #666; font-size: 12px;">
+            This link will expire on ${expiresAt.toLocaleString()}. 
+            If you have any technical issues, please contact the recruitment team.
+          </p>
+        </div>
+        `
+        };
+        emailAttempted = true;
+        sgMail
+          .send(msg)
+          .then(() => {
+            console.log('[Auth] Email sent successfully via SendGrid to', candidateEmail);
+          })
+          .catch((emailErr) => {
+            console.error('SendGrid email send failed (non-blocking):', emailErr?.response?.body || emailErr);
+          });
+      }
+    } else if (transporter) {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: candidateEmail,
