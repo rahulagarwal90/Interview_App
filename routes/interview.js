@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 const sgMail = require('@sendgrid/mail');
+const crypto = require('crypto');
 const { activeSessions } = require('./auth');
 
 const router = express.Router();
@@ -189,6 +190,29 @@ async function sendResultEmail(resultSummary, isPassed) {
     </tr>
   `).join('');
 
+  // Optional secure recording download link
+  const appUrl = (process.env.APP_URL || '').replace(/\/+$/, '');
+  const hasRecording = !!resultSummary.recordingFile;
+  let downloadSection = '';
+  let attachmentInfo = { canAttach: false, path: '', size: 0 };
+  if (hasRecording) {
+    try {
+      const filePath = path.join(RECORDINGS_PATH, resultSummary.recordingFile);
+      const stat = fs.statSync(filePath);
+      attachmentInfo = { canAttach: stat.size <= 15 * 1024 * 1024, path: filePath, size: stat.size };
+      const expires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+      const sig = signDownloadToken(resultSummary.sessionId, resultSummary.recordingFile, expires);
+      const link = `${appUrl}/api/interview/recording/${encodeURIComponent(resultSummary.sessionId)}?file=${encodeURIComponent(resultSummary.recordingFile)}&expires=${expires}&sig=${sig}`;
+      downloadSection = `
+        <div style="margin-top: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px;">
+          <p><strong>Recording File:</strong> ${resultSummary.recordingFile}</p>
+          <p><a href="${link}">Download recording (available for 24 hours)</a></p>
+        </div>`;
+    } catch (e) {
+      console.warn('[Interview] Could not stat recording for email:', e);
+    }
+  }
+
   const commonHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
         <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
@@ -231,7 +255,7 @@ async function sendResultEmail(resultSummary, isPassed) {
           ${resultSummary.recordingFile ? `
             <div style="margin-top: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px;">
               <p><strong>Recording File:</strong> ${resultSummary.recordingFile}</p>
-              <p><em>The interview recording has been saved and can be reviewed if needed.</em></p>
+              <p><a href="${appUrl}/api/interview/recording/${encodeURIComponent(resultSummary.sessionId)}?file=${encodeURIComponent(resultSummary.recordingFile)}&expires=${expires}&sig=${sig}">Download recording (available for 24 hours)</a></p>
             </div>
           ` : ''}
 
@@ -239,7 +263,6 @@ async function sendResultEmail(resultSummary, isPassed) {
             <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
               <h3>Transcript</h3>
               <pre style="white-space: pre-wrap; font-family: inherit;">${resultSummary.transcript}</pre>
-            </div>
           ` : ''}
         </div>
       </div>
@@ -256,7 +279,16 @@ async function sendResultEmail(resultSummary, isPassed) {
       subject,
       html: commonHtml
     };
-    // Note: Attaching large video files via email is discouraged. We omit attachments in SendGrid path.
+    // Attach only if small enough
+    if (hasRecording && attachmentInfo.canAttach) {
+      const fileContent = fs.readFileSync(attachmentInfo.path);
+      msg.attachments = [{
+        content: fileContent.toString('base64'),
+        filename: resultSummary.recordingFile,
+        type: 'video/webm',
+        disposition: 'attachment'
+      }];
+    }
     await sgMail.send(msg);
     return;
   }
@@ -267,10 +299,10 @@ async function sendResultEmail(resultSummary, isPassed) {
       to: process.env.RECRUITER_EMAIL,
       subject,
       html: commonHtml,
-      attachments: resultSummary.recordingFile ? [
+      attachments: hasRecording && attachmentInfo.canAttach ? [
         {
           filename: resultSummary.recordingFile,
-          path: path.join(RECORDINGS_PATH, resultSummary.recordingFile)
+          path: attachmentInfo.path
         }
       ] : []
     };
@@ -279,6 +311,40 @@ async function sendResultEmail(resultSummary, isPassed) {
   }
 
   console.warn('[Interview] No email provider configured; skipping result email.');
+}
+
+// Signed download route for recordings
+router.get('/recording/:sessionId', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { file, expires, sig } = req.query;
+    if (!sessionId || !file || !expires || !sig) {
+      return res.status(400).json({ error: 'Missing parameters' });
+    }
+    const expiresNum = Number(expires);
+    if (!expiresNum || Date.now() > expiresNum) {
+      return res.status(403).json({ error: 'Link expired' });
+    }
+    const expected = signDownloadToken(sessionId, file, expiresNum);
+    if (expected !== sig) {
+      return res.status(403).json({ error: 'Invalid signature' });
+    }
+    const filePath = path.join(RECORDINGS_PATH, file);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    res.download(filePath);
+  } catch (e) {
+    console.error('Download error:', e);
+    res.status(500).json({ error: 'Failed to download recording' });
+  }
+});
+
+function signDownloadToken(sessionId, fileName, expires) {
+  const secret = process.env.JWT_SECRET || 'default-secret';
+  const h = crypto.createHmac('sha256', secret);
+  h.update(`${sessionId}|${fileName}|${expires}`);
+  return h.digest('hex');
 }
 
 // Get interview results (for admin)
