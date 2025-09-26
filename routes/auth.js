@@ -69,11 +69,13 @@ router.post('/generate-link', async (req, res) => {
       createdAt: new Date()
     });
 
-    // Generate interview link
-    const interviewLink = `${process.env.APP_URL}/interview?token=${token}`;
+    // Normalize APP_URL to avoid double slashes and generate link
+    const appUrl = (process.env.APP_URL || '').replace(/\/+$/, '');
+    const interviewLink = `${appUrl}/interview?token=${token}`;
     console.log('[Auth] Generated link for', candidateEmail, '->', interviewLink);
 
     // Send email to candidate (optional)
+    let emailSent = false;
     if (transporter) {
       const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -112,6 +114,7 @@ router.post('/generate-link', async (req, res) => {
 
       try {
         await transporter.sendMail(mailOptions);
+        emailSent = true;
       } catch (emailErr) {
         console.error('Email send failed, proceeding with link generation:', emailErr);
         // Continue; admin can copy the link from the response/UI
@@ -124,7 +127,8 @@ router.post('/generate-link', async (req, res) => {
       success: true,
       sessionId,
       interviewLink,
-      expiresAt
+      expiresAt,
+      emailSent
     });
 
   } catch (error) {
