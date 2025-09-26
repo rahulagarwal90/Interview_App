@@ -4,6 +4,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 const { activeSessions } = require('./auth');
 
 const router = express.Router();
@@ -27,16 +28,29 @@ const upload = multer({
   limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
 });
 
-// Email transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+// Email providers (optional)
+let transporter = null;
+if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter = nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+}
+
+let sendgridReady = false;
+if (process.env.SENDGRID_API_KEY) {
+  try {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    sendgridReady = true;
+  } catch (e) {
+    console.error('[Interview] Failed to initialize SendGrid:', e);
   }
-});
+}
 
 // Load questions based on role
 router.get('/questions/:role', (req, res) => {
@@ -140,8 +154,10 @@ router.post('/submit', upload.single('recording'), async (req, res) => {
     fs.ensureDirSync(path.dirname(resultsPath));
     fs.writeJsonSync(resultsPath, resultSummary, { spaces: 2 });
 
-    // Send email to recruiter
-    await sendResultEmail(resultSummary, isPassed);
+    // Send email to recruiter (non-blocking)
+    sendResultEmail(resultSummary, isPassed)
+      .then(() => console.log('[Interview] Result email triggered'))
+      .catch((e) => console.error('[Interview] Result email failed (non-blocking):', e));
 
     res.json({
       success: true,
@@ -173,11 +189,7 @@ async function sendResultEmail(resultSummary, isPassed) {
     </tr>
   `).join('');
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.RECRUITER_EMAIL,
-    subject: `Interview Result - ${status} - ${resultSummary.candidateName}`,
-    html: `
+  const commonHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
         <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
           <h1>Interview Result: ${status}</h1>
@@ -231,16 +243,42 @@ async function sendResultEmail(resultSummary, isPassed) {
           ` : ''}
         </div>
       </div>
-    `,
-    attachments: resultSummary.recordingFile ? [
-      {
-        filename: resultSummary.recordingFile,
-        path: path.join(RECORDINGS_PATH, resultSummary.recordingFile)
-      }
-    ] : []
-  };
+    `;
 
-  await transporter.sendMail(mailOptions);
+  const subject = `Interview Result - ${status} - ${resultSummary.candidateName}`;
+
+  if (sendgridReady) {
+    const fromEmail = process.env.SENDGRID_FROM || process.env.EMAIL_USER;
+    if (!fromEmail) throw new Error('No SENDGRID_FROM configured');
+    const msg = {
+      to: process.env.RECRUITER_EMAIL,
+      from: fromEmail,
+      subject,
+      html: commonHtml
+    };
+    // Note: Attaching large video files via email is discouraged. We omit attachments in SendGrid path.
+    await sgMail.send(msg);
+    return;
+  }
+
+  if (transporter) {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.RECRUITER_EMAIL,
+      subject,
+      html: commonHtml,
+      attachments: resultSummary.recordingFile ? [
+        {
+          filename: resultSummary.recordingFile,
+          path: path.join(RECORDINGS_PATH, resultSummary.recordingFile)
+        }
+      ] : []
+    };
+    await transporter.sendMail(mailOptions);
+    return;
+  }
+
+  console.warn('[Interview] No email provider configured; skipping result email.');
 }
 
 // Get interview results (for admin)

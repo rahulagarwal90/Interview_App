@@ -33,6 +33,7 @@ app.use(express.static('public', {
 // Ensure upload directory exists
 fs.ensureDirSync('./uploads');
 fs.ensureDirSync('./recordings');
+fs.ensureDirSync('./results');
 
 // Routes
 const authRoutes = require('./routes/auth');
