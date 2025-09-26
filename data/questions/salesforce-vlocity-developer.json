@@ -1,0 +1,124 @@
+[
+  {
+    "id": "vlocity-1",
+    "question": "What is Salesforce Vlocity and what are its main components?",
+    "type": "multiple-choice",
+    "options": [
+      "A CRM platform for managing customer relationships",
+      "An industry-specific cloud platform with DataRaptor, Integration Procedures, and OmniScript",
+      "A data visualization tool for Salesforce",
+      "A mobile application development framework"
+    ],
+    "correctAnswer": "An industry-specific cloud platform with DataRaptor, Integration Procedures, and OmniScript",
+    "timeLimit": 120,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "vlocity-2",
+    "question": "What is the primary purpose of DataRaptor in Vlocity?",
+    "type": "multiple-choice",
+    "options": [
+      "To create user interfaces",
+      "To transform and manipulate data between different formats",
+      "To manage user permissions",
+      "To schedule batch jobs"
+    ],
+    "correctAnswer": "To transform and manipulate data between different formats",
+    "timeLimit": 90,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "vlocity-3",
+    "question": "Which Vlocity tool is used for creating guided user experiences and forms?",
+    "type": "multiple-choice",
+    "options": [
+      "DataRaptor",
+      "Integration Procedure",
+      "OmniScript",
+      "FlexCard"
+    ],
+    "correctAnswer": "OmniScript",
+    "timeLimit": 60,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "vlocity-4",
+    "question": "What is the difference between DataRaptor Extract and DataRaptor Transform?",
+    "type": "text",
+    "correctAnswer": "DataRaptor Extract retrieves data from Salesforce objects and external systems, while DataRaptor Transform manipulates and formats data without directly querying Salesforce objects.",
+    "timeLimit": 180,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "vlocity-5",
+    "question": "In Vlocity, what is an Integration Procedure used for?",
+    "type": "multiple-choice",
+    "options": [
+      "Creating Lightning components",
+      "Orchestrating multiple DataRaptors and external service calls",
+      "Managing user authentication",
+      "Generating reports"
+    ],
+    "correctAnswer": "Orchestrating multiple DataRaptors and external service calls",
+    "timeLimit": 90,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "vlocity-6",
+    "question": "What is a FlexCard in Vlocity?",
+    "type": "multiple-choice",
+    "options": [
+      "A payment processing component",
+      "A reusable Lightning Web Component for displaying data",
+      "A type of DataRaptor",
+      "A user permission set"
+    ],
+    "correctAnswer": "A reusable Lightning Web Component for displaying data",
+    "timeLimit": 75,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "vlocity-7",
+    "question": "How do you handle error handling in Integration Procedures?",
+    "type": "text",
+    "correctAnswer": "Use try-catch blocks, conditional logic, and error response nodes to handle exceptions and provide appropriate error messages to users.",
+    "timeLimit": 150,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "vlocity-8",
+    "question": "What is the Vlocity Build Tool used for?",
+    "type": "multiple-choice",
+    "options": [
+      "Creating new Vlocity components",
+      "Deploying Vlocity metadata between environments",
+      "Testing Vlocity applications",
+      "Monitoring system performance"
+    ],
+    "correctAnswer": "Deploying Vlocity metadata between environments",
+    "timeLimit": 60,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "vlocity-9",
+    "question": "Explain the concept of Vlocity Cards and their use cases.",
+    "type": "text",
+    "correctAnswer": "Vlocity Cards are reusable UI components that display contextual information and actions. They are used for creating dashboards, displaying related records, and providing quick actions in a card-based layout.",
+    "timeLimit": 180,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "vlocity-10",
+    "question": "What is the maximum number of steps allowed in an OmniScript?",
+    "type": "multiple-choice",
+    "options": [
+      "50",
+      "100",
+      "200",
+      "No limit"
+    ],
+    "correctAnswer": "No limit",
+    "timeLimit": 45,
+    "difficulty": "Easy"
+  }
+]

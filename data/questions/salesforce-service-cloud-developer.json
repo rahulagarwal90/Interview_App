@@ -1,0 +1,112 @@
+[
+  {
+    "id": "service-1",
+    "question": "What is Salesforce Service Cloud and what are its key features?",
+    "type": "multiple-choice",
+    "options": [
+      "A sales automation platform",
+      "A customer service platform with Case Management, Knowledge Base, and Omni-Channel",
+      "A marketing automation tool",
+      "A data analytics platform"
+    ],
+    "correctAnswer": "A customer service platform with Case Management, Knowledge Base, and Omni-Channel",
+    "timeLimit": 90,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "service-2",
+    "question": "What is the purpose of Omni-Channel in Service Cloud?",
+    "type": "multiple-choice",
+    "options": [
+      "To manage social media accounts",
+      "To route work items to available agents based on skills and capacity",
+      "To create marketing campaigns",
+      "To generate reports"
+    ],
+    "correctAnswer": "To route work items to available agents based on skills and capacity",
+    "timeLimit": 75,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "service-3",
+    "question": "How do you implement Case Escalation Rules in Service Cloud?",
+    "type": "text",
+    "correctAnswer": "Create escalation rules with criteria-based conditions, define escalation actions (email alerts, field updates, task creation), and set time-based triggers for automatic case escalation.",
+    "timeLimit": 180,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "service-4",
+    "question": "What is the difference between Case Assignment Rules and Case Escalation Rules?",
+    "type": "text",
+    "correctAnswer": "Case Assignment Rules automatically assign cases to users or queues when created, while Case Escalation Rules trigger actions when cases meet certain criteria over time (like unresolved high-priority cases).",
+    "timeLimit": 150,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "service-5",
+    "question": "What is Knowledge Management in Service Cloud?",
+    "type": "multiple-choice",
+    "options": [
+      "A document storage system",
+      "A centralized repository for articles, FAQs, and solutions accessible to agents and customers",
+      "A training management system",
+      "A project management tool"
+    ],
+    "correctAnswer": "A centralized repository for articles, FAQs, and solutions accessible to agents and customers",
+    "timeLimit": 60,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "service-6",
+    "question": "How do you configure Live Agent in Service Cloud?",
+    "type": "text",
+    "correctAnswer": "Set up Live Agent by creating chat buttons, configuring agent profiles, setting up routing rules, customizing the chat window, and embedding chat code on websites.",
+    "timeLimit": 200,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "service-7",
+    "question": "What is the Service Console and its benefits?",
+    "type": "multiple-choice",
+    "options": [
+      "A mobile app for service agents",
+      "A unified workspace with multiple tabs, related lists, and productivity tools for agents",
+      "A reporting dashboard",
+      "A customer self-service portal"
+    ],
+    "correctAnswer": "A unified workspace with multiple tabs, related lists, and productivity tools for agents",
+    "timeLimit": 90,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "service-8",
+    "question": "Explain the concept of Entitlements and Service Contracts in Service Cloud.",
+    "type": "text",
+    "correctAnswer": "Entitlements define what level of support customers are entitled to receive, including response times and support channels. Service Contracts are agreements that specify the terms of service delivery and can be linked to entitlements.",
+    "timeLimit": 180,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "service-9",
+    "question": "What is CTI (Computer Telephony Integration) in Service Cloud?",
+    "type": "multiple-choice",
+    "options": [
+      "A data backup system",
+      "Integration between phone systems and Salesforce for click-to-dial and screen pops",
+      "A mobile application framework",
+      "A security authentication method"
+    ],
+    "correctAnswer": "Integration between phone systems and Salesforce for click-to-dial and screen pops",
+    "timeLimit": 75,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "service-10",
+    "question": "How do you implement Field Service Lightning (FSL) work orders?",
+    "type": "text",
+    "correctAnswer": "Create work orders with required skills, schedule them using the dispatcher console, assign to service resources based on availability and location, and track completion status with mobile app integration.",
+    "timeLimit": 200,
+    "difficulty": "Hard"
+  }
+]

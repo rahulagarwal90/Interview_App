@@ -1,0 +1,106 @@
+[
+  {
+    "id": "qa-1",
+    "question": "What is the difference between Quality Assurance (QA) and Quality Control (QC)?",
+    "type": "text",
+    "correctAnswer": "QA is a proactive process focused on preventing defects through process improvement and standards, while QC is a reactive process focused on detecting and fixing defects in the final product.",
+    "timeLimit": 150,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "qa-2",
+    "question": "What are the different types of software testing?",
+    "type": "multiple-choice",
+    "options": [
+      "Only manual and automated testing",
+      "Functional, Non-functional, Unit, Integration, System, and Acceptance testing",
+      "Only black-box and white-box testing",
+      "Only regression and smoke testing"
+    ],
+    "correctAnswer": "Functional, Non-functional, Unit, Integration, System, and Acceptance testing",
+    "timeLimit": 90,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "qa-3",
+    "question": "Explain the Software Testing Life Cycle (STLC) phases.",
+    "type": "text",
+    "correctAnswer": "STLC phases include: Requirement Analysis, Test Planning, Test Case Development, Test Environment Setup, Test Execution, Test Cycle Closure, and Defect Retesting.",
+    "timeLimit": 180,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "qa-4",
+    "question": "What is the difference between Smoke Testing and Sanity Testing?",
+    "type": "text",
+    "correctAnswer": "Smoke testing is a broad, shallow test to verify basic functionality after a build, while Sanity testing is a narrow, deep test to verify specific functionality after minor changes or bug fixes.",
+    "timeLimit": 120,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "qa-5",
+    "question": "What is a Test Case and what should it include?",
+    "type": "multiple-choice",
+    "options": [
+      "Just the steps to execute",
+      "Test Case ID, Description, Preconditions, Test Steps, Expected Results, and Post-conditions",
+      "Only the expected results",
+      "Just the test data"
+    ],
+    "correctAnswer": "Test Case ID, Description, Preconditions, Test Steps, Expected Results, and Post-conditions",
+    "timeLimit": 75,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "qa-6",
+    "question": "What is Regression Testing and when should it be performed?",
+    "type": "text",
+    "correctAnswer": "Regression testing verifies that existing functionality still works after code changes. It should be performed after bug fixes, new feature additions, configuration changes, or performance improvements.",
+    "timeLimit": 150,
+    "difficulty": "Medium"
+  },
+  {
+    "id": "qa-7",
+    "question": "What are the severity and priority levels for defects?",
+    "type": "multiple-choice",
+    "options": [
+      "Only High, Medium, Low",
+      "Critical, High, Medium, Low for both severity and priority",
+      "Severity: Critical, High, Medium, Low; Priority: P1, P2, P3, P4",
+      "Only Blocker, Major, Minor"
+    ],
+    "correctAnswer": "Severity: Critical, High, Medium, Low; Priority: P1, P2, P3, P4",
+    "timeLimit": 60,
+    "difficulty": "Easy"
+  },
+  {
+    "id": "qa-8",
+    "question": "Explain Boundary Value Analysis testing technique.",
+    "type": "text",
+    "correctAnswer": "Boundary Value Analysis tests values at the boundaries of input domains, including minimum, maximum, and just inside/outside the valid range, as errors often occur at boundaries.",
+    "timeLimit": 180,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "qa-9",
+    "question": "What is API Testing and what should be validated?",
+    "type": "text",
+    "correctAnswer": "API Testing validates Application Programming Interfaces for functionality, reliability, performance, and security. It should validate data exchange, response codes, error handling, data accuracy, and performance metrics.",
+    "timeLimit": 200,
+    "difficulty": "Hard"
+  },
+  {
+    "id": "qa-10",
+    "question": "What is the difference between Verification and Validation?",
+    "type": "multiple-choice",
+    "options": [
+      "They are the same thing",
+      "Verification checks if we're building the product right; Validation checks if we're building the right product",
+      "Verification is manual; Validation is automated",
+      "Verification is for developers; Validation is for testers"
+    ],
+    "correctAnswer": "Verification checks if we're building the product right; Validation checks if we're building the right product",
+    "timeLimit": 90,
+    "difficulty": "Medium"
+  }
+]

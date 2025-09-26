@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Session</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .interview-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #candidateVideo {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .recording-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .question-card {
+            min-height: 300px;
+        }
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+        .warning-banner {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .cheating-alert {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .option-button {
+            margin: 5px 0;
+            text-align: left;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .option-button:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .option-button.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .completion-message {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+        #setupScreen {
+            text-align: center;
+            color: white;
+            padding: 60px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="interview-container">
+        <!-- Setup Screen -->
+        <div id="setupScreen">
+            <div class="card">
+                <div class="card-body p-5">
+                    <h2 class="mb-4"><i class="fas fa-video me-2"></i>Interview Setup</h2>
+                    <p class="lead mb-4">Please allow camera and microphone access to begin your interview.</p>
+                    
+                    <div class="warning-banner">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Important Instructions</h5>
+                        <ul class="text-start mt-3">
+                            <li>Keep your camera and microphone on throughout the interview</li>
+                            <li>Do not switch tabs, minimize the window, or use other applications</li>
+                            <li>Ensure you are in a quiet, well-lit environment</li>
+                            <li>The interview will be recorded for evaluation purposes</li>
+                            <li>Any suspicious activity will be flagged and may result in disqualification</li>
+                        </ul>
+                    </div>
+
+                    <div class="video-container mb-4">
+                        <video id="setupVideo" autoplay muted></video>
+                        <div class="recording-indicator" style="display: none;">
+                            <i class="fas fa-circle me-1"></i>RECORDING
+                        </div>
+                    </div>
+
+                    <div id="setupStatus" class="mb-4">
+                        <p><i class="fas fa-spinner fa-spin me-2"></i>Checking camera and microphone...</p>
+                    </div>
+
+                    <button id="startInterview" class="btn btn-primary btn-lg" style="display: none;">
+                        <i class="fas fa-play me-2"></i>Start Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interview Screen -->
+        <div id="interviewScreen" style="display: none;">
+            <!-- Header -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h5 class="mb-0" id="candidateInfo"></h5>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <div class="progress mb-2">
+                                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <small>Question <span id="currentQuestion">1</span> of <span id="totalQuestions">10</span></small>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <div class="timer" id="timer">60:00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cheating Alert -->
+            <div id="cheatingAlert" class="cheating-alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="cheatingMessage">Warning: Suspicious activity detected!</span>
+            </div>
+
+            <div class="row">
+                <!-- Video Feed -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body p-2">
+                            <div class="video-container">
+                                <video id="candidateVideo" autoplay muted></video>
+                                <div class="recording-indicator">
+                                    <i class="fas fa-circle me-1"></i>REC
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Question Area -->
+                <div class="col-md-8">
+                    <div class="card question-card">
+                        <div class="card-body p-4">
+                            <h4 class="mb-4" id="questionText">Loading question...</h4>
+                            
+                            <!-- Multiple Choice Options -->
+                            <div id="multipleChoiceOptions" style="display: none;">
+                                <div id="optionsContainer"></div>
+                            </div>
+
+                            <!-- Text Answer -->
+                            <div id="textAnswer" style="display: none;">
+                                <textarea id="textResponse" class="form-control" rows="6" 
+                                         placeholder="Type your answer here..."></textarea>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <button id="prevButton" class="btn btn-outline-secondary" style="display: none;">
+                                    <i class="fas fa-arrow-left me-2"></i>Previous
+                                </button>
+                                <div class="ms-auto">
+                                    <button id="nextButton" class="btn btn-primary">
+                                        <i class="fas fa-arrow-right me-2"></i>Next
+                                    </button>
+                                    <button id="submitButton" class="btn btn-success" style="display: none;">
+                                        <i class="fas fa-check me-2"></i>Submit Interview
+                                    </button>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Screen -->
+        <div id="completionScreen" style="display: none;">
+            <div class="completion-message">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                        <h2 class="mt-4 mb-3">Interview Completed Successfully!</h2>
+                        <p class="lead mb-4">
+                            Thank you for completing the interview. Your responses have been submitted 
+                            and are being evaluated. The results will be sent to the recruitment team.
+                        </p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            You will receive an email notification once the evaluation is complete.
+                        </div>
+                        <button id="closeInterview" class="btn btn-primary btn-lg mt-3">
+                            <i class="fas fa-times me-2"></i>Close Interview
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/interview.js?v=20250926"></script>
+</body>
+</html>
