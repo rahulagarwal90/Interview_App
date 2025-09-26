@@ -589,25 +589,29 @@ function closeInterview() {
 function setupAntiCheating() {
     // Tab switch detection
     document.addEventListener('visibilitychange', function() {
+        // Do not enforce during setup/permission prompts
+        if (!interviewStarted) return;
         if (document.hidden) {
             windowBlurCount++;
-            showCheatingAlert('Tab switching detected. Interview will end in 5 seconds.');
+            showCheatingAlert('Tab switching detected. If you do not return within 10 seconds, the interview will end.');
             socket.emit('cheating-detected', { type: 'tab-switch', sessionId: sessionData.sessionId, count: windowBlurCount });
             // Strict enforcement: end interview in 5 seconds if still not visible
             setTimeout(() => {
-                if (document.hidden && !isSubmitting) submitInterview();
-            }, 5000);
+                if (interviewStarted && document.hidden && !isSubmitting) submitInterview();
+            }, 10000);
         }
     });
     
     // Window focus detection
     window.addEventListener('blur', function() {
+        // Do not enforce during setup/permission prompts
+        if (!interviewStarted) return;
         tabSwitchCount++;
-        showCheatingAlert('Window focus lost. Interview will end in 5 seconds.');
+        showCheatingAlert('Window focus lost. If you do not return within 10 seconds, the interview will end.');
         socket.emit('cheating-detected', { type: 'window-blur', sessionId: sessionData.sessionId, count: tabSwitchCount });
         setTimeout(() => {
-            if (!document.hasFocus() && !isSubmitting) submitInterview();
-        }, 5000);
+            if (interviewStarted && !document.hasFocus() && !isSubmitting) submitInterview();
+        }, 10000);
     });
     
     // Prevent right-click
