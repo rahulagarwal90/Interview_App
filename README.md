@@ -37,6 +37,7 @@ A comprehensive video interview application with automated evaluation, anti-chea
 - Secure link delivery to candidates
 - Result notifications to recruiters
 - Detailed performance reports
+- SendGrid API support for production (recommended on Render) with SMTP fallback
 
 ### 📈 Admin Dashboard
 - Session monitoring
@@ -77,19 +78,26 @@ npm install
 ```
 
 ### 2. Environment Configuration
-Copy `.env.example` to `.env` and configure:
+Copy `.env.example` to `.env` and configure (choose ONE email provider):
 
 ```env
 # Server Configuration
 PORT=3000
 NODE_ENV=development
 
-# Email Configuration (Gmail)
+# Email Configuration (choose ONE)
+#
+# Option A) Gmail SMTP (local/dev)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
-RECRUITER_EMAIL=reenarani.a@gmail.com
+RECRUITER_EMAIL=recipient@example.com
+
+# Option B) SendGrid API (recommended for Render)
+# When SENDGRID_API_KEY is set the app uses SendGrid and skips SMTP
+SENDGRID_API_KEY=your-sendgrid-api-key
+SENDGRID_FROM=verified-sender@example.com
 
 # JWT Secret
 JWT_SECRET=your-super-secret-jwt-key-here
@@ -98,7 +106,7 @@ JWT_SECRET=your-super-secret-jwt-key-here
 APP_URL=http://localhost:3000
 ```
 
-### 3. Gmail Setup for Email Notifications
+### 3. Gmail Setup for Email Notifications (optional)
 1. Enable 2-Factor Authentication on your Gmail account
 2. Generate an App Password:
    - Go to Google Account Settings
@@ -119,9 +127,13 @@ Access the application at: `http://localhost:3000`
 
 1. **Generate Interview Link**
    - Enter candidate email, name, and role
-   - Set interview duration (30-180 minutes)
+   - Set interview duration (30–180 minutes)
    - Click "Generate Interview Link"
-   - Link is automatically emailed to candidate
+   - The UI always shows the generated link with a Copy button
+   - Email status shown:
+     - "Email sent" when confirmed
+     - "Email is being sent" when queued via provider
+     - "Email not sent" if provider not configured — share link manually
 
 2. **Monitor Sessions**
    - View active and completed sessions in dashboard
@@ -139,10 +151,11 @@ Access the application at: `http://localhost:3000`
    - Check email for interview invitation
    - Click the secure link to start
 
-2. **Setup Phase**
+2. **Setup Phase & Rules Screen**
    - Allow camera and microphone access
-   - Ensure proper lighting and quiet environment
-   - Read anti-cheating guidelines
+   - Read the rules/instructions shown on the setup screen
+   - Click the "Start Interview" button to begin
+   - The interview will not start until you click Start
 
 3. **Interview Phase**
    - Answer questions within time limits
@@ -246,9 +259,12 @@ interview-app/
    - Ensure JSON syntax is valid
 
 4. **Recording Issues**
-   - Check browser compatibility (Chrome recommended)
-   - Ensure sufficient disk space
-   - Verify MediaRecorder support
+   - Use Chrome on desktop for best MediaRecorder support
+   - Ensure HTTPS in production for getUserMedia
+   - Microphone tips:
+     - Check OS/browser mic permissions and input device
+     - Close other apps using the mic
+     - Our app requests audio with echoCancellation, noiseSuppression, autoGainControl
 
 ### Browser Compatibility
 - **Recommended**: Chrome 80+, Firefox 75+
@@ -281,14 +297,13 @@ This project is designed to be deployed as a single Node/Express service on Rend
 - Gmail App Password (2FA enabled) for SMTP
 
 ### 2) Environment Variables (Render → Settings → Environment)
-Set the following variables (values shown are examples):
+Set the following variables (values shown are examples). Prefer SendGrid on Render:
 
 ```
 NODE_ENV=production
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your.email@gmail.com
-EMAIL_PASS=your-app-password
+# Recommended on Render
+SENDGRID_API_KEY=replace-with-sendgrid-api-key
+SENDGRID_FROM=verified-sender@example.com
 RECRUITER_EMAIL=recipient@example.com
 JWT_SECRET=replace-with-a-long-random-string
 RECORDINGS_PATH=/opt/render/project/src/recordings
@@ -299,6 +314,7 @@ APP_URL=TEMP_PLACEHOLDER
 Notes:
 - `APP_URL` will be updated to your Render URL after the first successful deploy.
 - `RECORDINGS_PATH` and `RESULTS_PATH` match the mount points you will create for persistent disks.
+- If you use SMTP on Render, Gmail may time out or be blocked on free tier. Prefer SendGrid.
 
 ### 3) Create the Web Service
 1. Go to https://render.com → New → Web Service
@@ -348,10 +364,10 @@ Perform these checks from an Incognito browser:
 
 - **Home/Admin**: Open `https://your-service.onrender.com/`
 - **Generate link**: Use the admin panel to send yourself an invite
-- **Interview start**:
-  - First question appears immediately
-  - Global timer shows 60:00
-  - Console logs include `startInterview` and `loadQuestion 0`
+- **Interview start (rules screen)**:
+  - Setup screen shows rules and a Start button
+  - Start button enables when camera/mic and questions are ready
+  - Click Start → timer shows 60:00 and first question loads
 - **Anti-cheat**:
   - Switch tabs; after 5 seconds the interview should auto-submit
 - **Submit flow**:
@@ -363,19 +379,15 @@ Perform these checks from an Incognito browser:
   - Confirm files saved under mounted paths (`/recordings` and `/results`)
 
 ### 7) Free Tier Limitations
-- Cold starts (20–50s) after inactivity
-- Modest CPU/network limits
-- Consider upgrading or splitting front/backends if traffic grows
-
 ### 8) Troubleshooting on Render
-- **Emails not sending**: Confirm `EMAIL_USER`, `EMAIL_PASS` (App Password), and that Render logs show SMTP success. Gmail may throttle heavy usage.
+- **Emails not sending**:
+  - Preferred: use SendGrid (`SENDGRID_API_KEY`, `SENDGRID_FROM` with verified sender)
+  - If using SMTP: confirm `EMAIL_USER`, `EMAIL_PASS` (App Password), and logs show success
+  - Check spam/promotions in recipient mailbox
 - **Recording issues**: Verify browser supports MediaRecorder (Chrome is recommended). Ensure HTTPS.
 - **Links invalid**: Ensure `APP_URL` matches your Render URL and that tokens haven’t expired.
 - **Files missing after restart**: Verify Persistent Disks are mounted to the same paths as in env vars.
   - If you deployed without disks, this is expected on redeploy or cold start. Use a bucket (S3) or enable disks for durability.
-
----
-
 ## Gmail App Password: Detailed Steps
 
 To use Gmail SMTP you must use an App Password (not your normal password).

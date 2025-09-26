@@ -104,12 +104,8 @@ async function validateTokenAndInit(token) {
             
             // Initialize media
             await initializeMedia();
-
-            // Explicitly start the interview once both are ready
-            if (!interviewStarted && mediaReady && questionsReady) {
-                console.log('[Interview] Auto-start after init');
-                startInterview();
-            }
+            // Do NOT auto-start; wait for candidate to read rules and click Start
+            console.log('[Interview] Ready: waiting for candidate to click Start');
         } else {
             showError(result.error || 'Invalid or expired interview link.');
         }
@@ -150,13 +146,7 @@ async function loadQuestions(role) {
         responses = new Array(questions.length).fill(null);
         questionsReady = true;
         maybeEnableStart();
-        // Safety fallback: auto-start shortly if everything is ready
-        setTimeout(() => {
-            if (!interviewStarted && mediaReady && questionsReady) {
-                console.log('[Interview] Fallback auto-start after loadQuestions');
-                startInterview();
-            }
-        }, 500);
+        // No auto-start; candidate must click Start
     } catch (error) {
         console.error('Error loading questions:', error);
         showError('Failed to load interview questions. Please refresh the page.');
@@ -165,10 +155,14 @@ async function loadQuestions(role) {
 
 async function initializeMedia() {
     try {
-        // Request camera and microphone access
+        // Request camera and microphone access with robust audio constraints
         stream = await navigator.mediaDevices.getUserMedia({
             video: { width: 640, height: 480 },
-            audio: true
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
         });
         
         // Setup video elements
@@ -178,10 +172,22 @@ async function initializeMedia() {
         setupVideo.srcObject = stream;
         candidateVideo.srcObject = stream;
         
-        // Setup media recorder
-        mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9'
-        });
+        // Setup media recorder with codec negotiation to ensure audio track is included
+        const preferredTypes = [
+            'video/webm;codecs=vp8,opus',
+            'video/webm;codecs=vp9,opus',
+            'video/webm;codecs=h264,opus',
+            'video/webm'
+        ];
+        let chosenType = '';
+        for (const t of preferredTypes) {
+            if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) {
+                chosenType = t;
+                break;
+            }
+        }
+        const mrOptions = chosenType ? { mimeType: chosenType, audioBitsPerSecond: 128000 } : {};
+        mediaRecorder = new MediaRecorder(stream, mrOptions);
         
         mediaRecorder.ondataavailable = function(event) {
             if (event.data.size > 0) {
@@ -193,16 +199,26 @@ async function initializeMedia() {
             console.log('Recording stopped');
         };
         
+        // Basic audio track checks
+        const audioTrack = stream.getAudioTracks()[0];
+        if (!audioTrack) {
+            console.warn('[Interview] No audio track detected');
+            const ss = document.getElementById('setupStatus');
+            if (ss) {
+                ss.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-microphone-slash me-2"></i>
+                    Microphone not detected. Please check OS/browser audio settings.
+                </div>`;
+            }
+        } else {
+            console.log('[Interview] Audio track ready:', { enabled: audioTrack.enabled, muted: audioTrack.muted, label: audioTrack.label });
+        }
+
         // Mark media ready and maybe enable Start
         mediaReady = true;
         maybeEnableStart();
-        // Safety fallback: auto-start shortly if everything is ready
-        setTimeout(() => {
-            if (!interviewStarted && mediaReady && questionsReady) {
-                console.log('[Interview] Fallback auto-start after initializeMedia');
-                startInterview();
-            }
-        }, 500);
+        // Do not auto-start; wait for user action
         
         // Monitor stream status
         monitorStreamStatus();
@@ -682,9 +698,8 @@ function maybeEnableStart() {
     const startBtn = document.getElementById('startInterview');
     const ss = document.getElementById('setupStatus');
     if (mediaReady && questionsReady) {
-        // Auto-start interview immediately for a smoother UX
-        if (ss) ss.innerHTML = '';
-        if (startBtn) startBtn.style.display = 'none';
-        startInterview();
+        // Show Start button and keep instructions visible until candidate clicks
+        if (ss) ss.innerHTML = '<div class="alert alert-success"><i class="fas fa-check me-2"></i>Camera and microphone are ready. Please review the rules, then click Start.</div>';
+        if (startBtn) startBtn.style.display = 'inline-block';
     }
 }

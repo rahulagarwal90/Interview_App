@@ -17,15 +17,21 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch('/api/auth/generate-link', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
             const result = await response.json();
 
-            if (result.success) {
+            if (response.ok && result && result.success) {
+                let emailNote = '';
+                if (result.emailSent) {
+                    emailNote = `<div class=\"alert alert-info\"><i class=\"fas fa-envelope me-2\"></i>Email sent to ${formData.candidateEmail}</div>`;
+                } else if (result.emailAttempted) {
+                    emailNote = `<div class=\"alert alert-info\"><i class=\"fas fa-paper-plane me-2\"></i>Email is being sent. If not received in a few minutes, copy the link below and share manually.</div>`;
+                } else {
+                    emailNote = `<div class=\"alert alert-warning\"><i class=\"fas fa-envelope me-2\"></i>Email not sent (provider unavailable). Copy the link below and share manually.</div>`;
+                }
                 showResult('success', `
                     <h5><i class="fas fa-check-circle me-2"></i>Interview Link Generated Successfully!</h5>
                     <p><strong>Session ID:</strong> ${result.sessionId}</p>
@@ -37,10 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </button>
                     </div>
                     <p><strong>Expires:</strong> ${new Date(result.expiresAt).toLocaleString()}</p>
-                    <div class="alert alert-info">
-                        <i class="fas fa-envelope me-2"></i>
-                        An email with the interview link has been sent to ${formData.candidateEmail}
-                    </div>
+                    ${emailNote}
                 `);
                 adminForm.reset();
             } else {
