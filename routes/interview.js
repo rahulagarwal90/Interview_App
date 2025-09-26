@@ -252,12 +252,7 @@ async function sendResultEmail(resultSummary, isPassed) {
             </tbody>
           </table>
 
-          ${resultSummary.recordingFile ? `
-            <div style="margin-top: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 5px;">
-              <p><strong>Recording File:</strong> ${resultSummary.recordingFile}</p>
-              <p><a href="${appUrl}/api/interview/recording/${encodeURIComponent(resultSummary.sessionId)}?file=${encodeURIComponent(resultSummary.recordingFile)}&expires=${expires}&sig=${sig}">Download recording (available for 24 hours)</a></p>
-            </div>
-          ` : ''}
+          
 
           ${resultSummary.transcript ? `
             <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
